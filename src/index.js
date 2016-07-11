@@ -13,7 +13,8 @@ let Path                = require( 'path' ),
     globalOption        = defaultOption,
     setOption, compile, compileFile, renderFile,
 
-    privateConcatStrExp = ';__html +=',
+    privateParam        = '__html',
+    privateConcatStrExp = `;${ privateParam } +=`,
     codePrefix          = `'use strict';`,
     watchedFiles        = {},
     cachedFiles         = {},
@@ -46,7 +47,7 @@ const
     EQUAL    = '=',
     ASTERISK = '*'
 
-exports.compile = compile = ( source, tmplFilePath ) => {
+exports.compile = compile = ( source ) => {
     if ( !isSetted ) {
         setOption()
     }
@@ -54,8 +55,6 @@ exports.compile = compile = ( source, tmplFilePath ) => {
     log( 'start compile' )
 
     let contentStr    = `
-    /* source file path = ${ tmplFilePath || 'in memory' } */
-     module.exports = function compiledRenderHandler() {
         let __html = '';
     `,
 
@@ -73,7 +72,7 @@ exports.compile = compile = ( source, tmplFilePath ) => {
         pos           = 0,
         tagStartPos   = 0,
         tagEndPos     = 0,
-        contentLength
+        tmp, contentLength
 
     contentLength = source.length
 
@@ -109,7 +108,11 @@ exports.compile = compile = ( source, tmplFilePath ) => {
 
             default:
                 if ( Directives.hasDirective( fragment ) ) {
-                    tagEndPos = Directives.parse( fragment, source, tagStartPos + 2, tagEndPos )
+                    tmp = Directives.parse( fragment, source, tagStartPos + 2, tagEndPos )
+                    if ( tmp ) {
+                        concatContent( privateConcatStrExp + tmp.output )
+                        tagEndPos = tmp.nextPos
+                    }
                     break
                 }
                 concatContent( fragment )
@@ -120,7 +123,10 @@ exports.compile = compile = ( source, tmplFilePath ) => {
         }
     }
 
-    return contentStr
+    return {
+        content: contentStr,
+        blocks : Directives.generateBlock()
+    }
 }
 
 exports.compileFile = compileFile = ( tmplFilePath ) => {
@@ -140,15 +146,34 @@ exports.compileFile = compileFile = ( tmplFilePath ) => {
         source = BLANK
     }
 
-    return codePrefix + compile( source )
+    let result = compile( source )
+
+    console.log( result )
+
+    return `${ codePrefix }
+        /* source file path = ${ tmplFilePath } */
+        module.exports = function compiledRenderHandler() {
+        this.__blocks = {}
+        ${
+        Object.keys( result.blocks ).map( ( name ) => {
+            return `this.__blocks['${ name }'] = () => {
+                    ${ result.blocks[ name ] }
+                    return ${ privateParam }
+                }`
+        } ).join( ';' )
+        }
+        ${ result.content }
+        return ${ privateParam }
+        }
+        `
 }
 
 exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
     let cp       = globalOption.compiledFolder + '/' + generateName( tmplFilePath, prefix ),
         tmplFn,
         _compile = () => {
-            FS.writeFileSync( cp, compileFile( tmplFilePath ) )
             cachedFiles[ cp ] = true
+            FS.writeFileSync( cp, compileFile( tmplFilePath ) )
             return renderFile( tmplFilePath, prefix, data )
         }
 

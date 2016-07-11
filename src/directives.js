@@ -9,9 +9,8 @@ let directives = [ {
 
 class Directives {
     constructor( compiler ) {
-        this._compiler  = compiler
-        this._blockNums = 0
-        this._blocks    = {}
+        this._compiler = compiler
+        this._blocks   = {}
     }
 
     hasDirective( code ) {
@@ -23,16 +22,14 @@ class Directives {
     }
 
     parse( code, source, start, end ) {
-        var codes     = code.trim().split( /\s+/ ),
-            name      = codes[ 0 ],
-            directive = this.getDirective( name ),
+        var codes          = code.trim().split( /\s+/ ),
+            name           = codes[ 0 ],
+            directive      = this.getDirective( name ),
             endTag,
             endTagReg,
-            endTagPosStart,
+            endTagPosStart = end,
             content,
             tmpSource
-
-        //this[ name ].apply( this, codes.splice( 1 ) )
 
         if ( directive.endTag ) {
             endTagReg = new RegExp( `<%\\s*${ directive.endTag }\\s*%>`, 'm' )
@@ -45,29 +42,21 @@ class Directives {
 
             endTagPosStart = source.indexOf( endTag[ 0 ], end )
             content        = this._compiler.compile( source.toString( 'utf8', end + 2, endTagPosStart ) )
+            endTagPosStart += endTag[ 0 ].length
+        }
 
-            console.log( content )
+        let args = codes.splice( 1 )
+        //discard nested blocks
+        args.push( content.content )
+
+        return {
+            output : this[ name ].apply( this, args ),
+            nextPos: endTagPosStart
         }
     }
 
-    genenrateBlocks() {
-        if ( this._blockNums ) {
-            throw Error( `Lack ${ this._blockNums } "endblock" directive!` )
-        }
-
-        let blocks = Object.keys( this._blocks ).map( ( name ) => {
-            return `
-            ${ name } : function() {
-                return ${ this._blocks[ name ] }
-            }
-            `
-        } )
-
-        return `
-        exports.blocks = {
-        ${ blocks }
-        }
-        `
+    generateBlock() {
+        return this._blocks
     }
 
     //directives
@@ -76,9 +65,7 @@ class Directives {
         console.log( base )
     }
 
-    block( name ) {
-        this._blockNums++
-
+    block( name, content ) {
         if ( !name ) {
             throw Error( 'Please provide a name for block!' )
         }
@@ -87,7 +74,9 @@ class Directives {
             throw Error( `${ name } is defined somewhere!` )
         }
 
-        this._currentBlock = this._blocks[ name ] = []
+        this._blocks[ name ] = content
+
+        return `this.__blocks['${ name }']() || ''`
     }
 }
 
