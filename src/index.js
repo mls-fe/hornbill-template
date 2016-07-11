@@ -9,9 +9,10 @@ let Path                = require( 'path' ),
         compiledFolder: './tmp'
     },
     globalOption        = defaultOption,
-    setOption, compile, renderFile,
+    setOption, compile, compileFile, renderFile,
 
     privateConcatStrExp = ';__html +=',
+    codePrefix          = `'use strict';`,
     watchedFiles        = {},
     cachedFiles         = {},
     generateName        = ( name, prefix ) => {
@@ -32,31 +33,29 @@ let Path                = require( 'path' ),
             delete require.cache[ compiledFile ]
             delete cachedFiles[ compiledFile ]
         } )
+    },
+
+    log                 = ( str ) => {
+        console.log( `[ log ] ${ str }` )
     }
 
 const
-    BLANK = '',
-    EQUAL = '='
+    BLANK    = '',
+    EQUAL    = '=',
+    ASTERISK = '*'
 
-function log( str ) {
-    console.log( `[ log ] ${ str }` )
-}
-
-exports.compile = compile = ( tmplFilePath, compiledFilePath ) => {
+exports.compile = compile = ( source, tmplFilePath ) => {
     if ( !isSetted ) {
         setOption()
     }
 
-    //log( 'start compile' )
+    log( 'start compile' )
 
-    tmplFilePath = Path.resolve( tmplFilePath )
-
-    let contentStr    = `'use strict';
-    /* source file path = ${ tmplFilePath } */
-module.exports = function compiledRenderHandler() {
-    let __html = '';
+    let contentStr    = `
+    /* source file path = ${ tmplFilePath || 'in memory' } */
+     module.exports = function compiledRenderHandler() {
+        let __html = '';
     `,
-        isInComment   = false,
 
         /**
          *
@@ -64,22 +63,70 @@ module.exports = function compiledRenderHandler() {
          * @param isPlain 如果是普通文本, 追加到内部字符串拼接, 否则直接追加到 contentStr 上
          */
         concatContent = ( str, isPlain ) => {
-            if ( isInComment ) {
-                return
-            }
-
             contentStr += isPlain ? `${ privateConcatStrExp } \`${ str }\`\n` : str
         },
         output        = ( str, start, end ) => {
             return str.toString( 'utf-8', start, end )
         },
-        source,
         pos           = 0,
         tagStartPos   = 0,
         tagEndPos     = 0,
         contentLength
 
-    //log( tmplFilePath )
+    contentLength = source.length
+
+    //file does not exist or is empty
+    if ( source ) {
+        //@TODO: not finished
+        while ( 1 ) {
+            tagStartPos = source.indexOf( '<%', pos )
+
+            if ( tagStartPos > -1 ) {
+                tagEndPos = source.indexOf( '%>', pos + 2 )
+            } else {
+                //didn't contain any special tags
+                concatContent( output( source, pos, contentLength ), true )
+                break
+            }
+
+            concatContent( output( source, pos, tagStartPos ), true )
+
+            let fragment = output( source, tagStartPos + 2, tagEndPos ).trim()
+
+            switch ( fragment[ 0 ] ) {
+            case EQUAL:
+                if ( fragment[ 1 ] === EQUAL ) {
+                    concatContent( `${ privateConcatStrExp } extFn.htmlEncode(' + ${ output( source, tagStartPos + 4, tagEndPos ) }')` )
+                } else {
+                    concatContent( privateConcatStrExp + output( source, tagStartPos + 3, tagEndPos ) )
+                }
+                break
+
+            case ASTERISK:
+                break
+
+            default:
+                concatContent( fragment )
+                break
+            }
+
+            pos = tagStartPos = tagEndPos + 2
+        }
+    }
+
+    return codePrefix + contentStr
+}
+
+exports.compileFile = compileFile = ( tmplFilePath ) => {
+    if ( !isSetted ) {
+        setOption()
+    }
+
+    log( 'start compile file' )
+
+    tmplFilePath = Path.resolve( tmplFilePath )
+
+    let source
 
     try {
         source = FS.readFileSync( tmplFilePath )
@@ -87,63 +134,15 @@ module.exports = function compiledRenderHandler() {
         source = BLANK
     }
 
-    contentLength = source.length
-
-    //file does not exist or is empty
-    if ( !source ) {
-        return () => {
-            return BLANK
-        }
-    }
-
-    //@TODO: not finished
-    while ( 1 ) {
-        tagStartPos = source.indexOf( '<%', pos )
-
-        if ( tagStartPos > -1 ) {
-            tagEndPos = source.indexOf( '%>', pos + 2 )
-        } else {
-            //didn't contain any special tags
-            concatContent( output( source, pos, contentLength ), true )
-            break
-        }
-
-        concatContent( output( source, pos, tagStartPos ), true )
-
-        let fragment = output( source, tagStartPos + 2, tagEndPos ).trim()
-        log( fragment )
-
-        switch ( fragment[ 0 ] ) {
-        case EQUAL:
-            if ( fragment[ 1 ] === EQUAL ) {
-                concatContent( `${ privateConcatStrExp } extFn.htmlEncode(' + ${ output( source, tagStartPos + 4, tagEndPos ) }')` )
-            } else {
-                concatContent( privateConcatStrExp + output( source, tagStartPos + 3, tagEndPos ) )
-            }
-            break
-
-        default:
-            concatContent( output( source, tagStartPos + 2, tagEndPos ) )
-            break
-        }
-
-        pos = tagStartPos = tagEndPos + 2
-    }
-
-    contentStr += `
-        return __html; 
-    }`
-
-    FS.writeFileSync( compiledFilePath, contentStr )
-    cachedFiles[ compiledFilePath ] = true
-    return contentStr
+    return compile( source )
 }
 
 exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
     let cp       = globalOption.compiledFolder + '/' + generateName( tmplFilePath, prefix ),
         tmplFn,
         _compile = () => {
-            tmplFn = compile( tmplFilePath, cp )
+            FS.writeFileSync( cp, compile( tmplFilePath ) )
+            cachedFiles[ cp ] = true
             return renderFile( tmplFilePath, prefix, data )
         }
 
@@ -153,13 +152,15 @@ exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
 
     if ( cachedFiles[ cp ] ) {
         try {
-            tmplFn = require( cp )
+            FS.statSync( cp )
         } catch ( e ) {
             return _compile()
         }
     } else {
         return _compile()
     }
+
+    tmplFn = require( cp )
 
     return data ? tmplFn.call( data ) : BLANK
 }
