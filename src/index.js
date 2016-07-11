@@ -3,6 +3,7 @@
 let Path                = require( 'path' ),
     FS                  = require( 'fs' ),
     Crypto              = require( 'crypto' ),
+    Ext                 = require( './ext' ),
     Directives          = require( './directives' )( exports ),
 
     isSetted            = false,
@@ -97,7 +98,7 @@ exports.compile = compile = ( source, tmplFilePath ) => {
             switch ( fragment[ 0 ] ) {
             case EQUAL:
                 if ( fragment[ 1 ] === EQUAL ) {
-                    concatContent( `${ privateConcatStrExp } extFn.htmlEncode(' + ${ output( source, tagStartPos + 4, tagEndPos ) }')` )
+                    concatContent( `${ privateConcatStrExp } this.__ext.htmlEncode(' + ${ output( source, tagStartPos + 4, tagEndPos ) }')` )
                 } else {
                     concatContent( privateConcatStrExp + output( source, tagStartPos + 3, tagEndPos ) )
                 }
@@ -167,7 +168,9 @@ exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
 
     tmplFn = require( cp )
 
-    return data ? tmplFn.call( data ) : BLANK
+    return data ? tmplFn.call( Object.assign( {}, data, {
+        __ext: Ext
+    } ) ) : BLANK
 }
 
 exports.setOption = setOption = ( options ) => {
