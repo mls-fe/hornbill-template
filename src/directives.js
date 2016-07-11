@@ -1,16 +1,19 @@
 'use strict'
 
-let directives = [ {
-    name: 'extends'
-}, {
-    name  : 'block',
-    endTag: 'endblock'
-} ]
+let Path       = require( 'path' ),
+    directives = [ {
+        name: 'extends'
+    }, {
+        name  : 'block',
+        endTag: 'endblock'
+    } ]
 
 class Directives {
-    constructor( compiler ) {
-        this._compiler = compiler
-        this._blocks   = {}
+    constructor( compiler, sourcePath, prefix ) {
+        this._sourcePath = sourcePath && sourcePath.replace( /[^/]+\..+$/, '' )
+        this._prefix     = prefix
+        this._compiler   = compiler
+        this._blocks     = {}
     }
 
     hasDirective( code ) {
@@ -47,22 +50,20 @@ class Directives {
 
         let args = codes.splice( 1 )
         //discard nested blocks
-        args.push( content.content )
+        content && args.push( content.content )
 
         return {
-            output : this[ name ].apply( this, args ),
+            output : this[ name ].apply( this, args ) || '',
             nextPos: endTagPosStart
         }
-    }
-
-    generateBlock() {
-        return this._blocks
     }
 
     //directives
 
     extends( base ) {
-        console.log( base )
+        let name = Path.resolve( this._sourcePath, base.replace( /['"]/g, '' ) )
+        this._compiler.renderFile( name, this._prefix )
+        this._base = this._compiler.generatePath( name, this._prefix )
     }
 
     block( name, content ) {
@@ -76,10 +77,10 @@ class Directives {
 
         this._blocks[ name ] = content
 
-        return `this.__blocks['${ name }']() || ''`
+        return `this.__blocks['${ name }'].call( this ) || ''`
     }
 }
 
-module.exports = ( compiler ) => {
-    return new Directives( compiler )
+module.exports = ( compiler, sourcePath, prefix ) => {
+    return new Directives( compiler, sourcePath, prefix )
 }

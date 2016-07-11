@@ -4,7 +4,7 @@ let Path                = require( 'path' ),
     FS                  = require( 'fs' ),
     Crypto              = require( 'crypto' ),
     Ext                 = require( './ext' ),
-    Directives          = require( './directives' )( exports ),
+    Directives          = require( './directives' ),
 
     isSetted            = false,
     defaultOption       = {
@@ -18,8 +18,8 @@ let Path                = require( 'path' ),
     codePrefix          = `'use strict';`,
     watchedFiles        = {},
     cachedFiles         = {},
-    generateName        = ( name, prefix ) => {
-        return ( prefix || '' ) + Crypto.createHash( 'md5' ).update( name ).digest( 'hex' ) + '.est'
+    generatePath        = ( name, prefix ) => {
+        return globalOption.compiledFolder + '/' + ( prefix || '' ) + Crypto.createHash( 'md5' ).update( name ).digest( 'hex' ) + '.est'
     },
     watchFile           = ( sourceFile, compiledFile ) => {
         if ( watchedFiles[ sourceFile ] ) {
@@ -47,15 +47,16 @@ const
     EQUAL    = '=',
     ASTERISK = '*'
 
-exports.compile = compile = ( source ) => {
+exports.compile = compile = ( source, sourcePath, prefix ) => {
     if ( !isSetted ) {
         setOption()
     }
 
     log( 'start compile' )
 
-    let contentStr    = `
-        let __html = '';
+    let directive     = Directives( exports, sourcePath, prefix ),
+        contentStr    = `
+        var __html = '';
     `,
 
         /**
@@ -64,10 +65,11 @@ exports.compile = compile = ( source ) => {
          * @param isPlain 如果是普通文本, 追加到内部字符串拼接, 否则直接追加到 contentStr 上
          */
         concatContent = ( str, isPlain ) => {
+            if ( !str ) return
             contentStr += isPlain ? `${ privateConcatStrExp } \`${ str }\`\n` : str
         },
         output        = ( str, start, end ) => {
-            return str.toString( 'utf-8', start, end )
+            return typeof str === 'string' ? str.substring( start, end ) : str.toString( 'utf-8', start, end )
         },
         pos           = 0,
         tagStartPos   = 0,
@@ -107,10 +109,10 @@ exports.compile = compile = ( source ) => {
                 break
 
             default:
-                if ( Directives.hasDirective( fragment ) ) {
-                    tmp = Directives.parse( fragment, source, tagStartPos + 2, tagEndPos )
+                if ( directive.hasDirective( fragment ) ) {
+                    tmp = directive.parse( fragment, source, tagStartPos + 2, tagEndPos )
                     if ( tmp ) {
-                        concatContent( privateConcatStrExp + tmp.output )
+                        tmp.output && concatContent( privateConcatStrExp + tmp.output )
                         tagEndPos = tmp.nextPos
                     }
                     break
@@ -125,11 +127,12 @@ exports.compile = compile = ( source ) => {
 
     return {
         content: contentStr,
-        blocks : Directives.generateBlock()
+        blocks : directive._blocks,
+        base   : directive._base
     }
 }
 
-exports.compileFile = compileFile = ( tmplFilePath ) => {
+exports.compileFile = compileFile = ( tmplFilePath, prefix ) => {
     if ( !isSetted ) {
         setOption()
     }
@@ -146,34 +149,44 @@ exports.compileFile = compileFile = ( tmplFilePath ) => {
         source = BLANK
     }
 
-    let result = compile( source )
-
-    console.log( result )
+    let result = compile( source, tmplFilePath, prefix )
 
     return `${ codePrefix }
         /* source file path = ${ tmplFilePath } */
-        module.exports = function compiledRenderHandler() {
-        this.__blocks = {}
+        ${ result.base ? 'exports.__base = require("' + result.base + '")' : '' }
+        exports.__blocks = {
         ${
         Object.keys( result.blocks ).map( ( name ) => {
-            return `this.__blocks['${ name }'] = () => {
+            return `${ name }() {
                     ${ result.blocks[ name ] }
                     return ${ privateParam }
                 }`
-        } ).join( ';' )
+        } ).join( ',' )
         }
+        }
+        exports.render = function compiledRenderHandler() {
+        if( this.__base ) {
+            var __base = this.__base;
+            this.__base = null;
+            debugger
+            this.__blocks = Object.assign( {}, __base.__blocks, this.__blocks )
+            return __base.render.call( this )
+        } else {
         ${ result.content }
+        }
         return ${ privateParam }
         }
         `
 }
 
 exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
-    let cp       = globalOption.compiledFolder + '/' + generateName( tmplFilePath, prefix ),
-        tmplFn,
+    tmplFilePath = Path.resolve( tmplFilePath )
+
+    let cp       = generatePath( tmplFilePath, prefix ),
+        tmplObj,
         _compile = () => {
             cachedFiles[ cp ] = true
-            FS.writeFileSync( cp, compileFile( tmplFilePath ) )
+            FS.writeFileSync( cp, compileFile( tmplFilePath, prefix ) )
             return renderFile( tmplFilePath, prefix, data )
         }
 
@@ -191,10 +204,12 @@ exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
         return _compile()
     }
 
-    tmplFn = require( cp )
+    tmplObj = require( cp )
 
-    return data ? tmplFn.call( Object.assign( {}, data, {
-        __ext: Ext
+    return data ? tmplObj.render.call( Object.assign( {}, data, {
+        __ext   : Ext,
+        __blocks: tmplObj.__blocks,
+        __base  : tmplObj.__base
     } ) ) : BLANK
 }
 
@@ -213,4 +228,4 @@ exports.setOption = setOption = ( options ) => {
     }
 }
 
-exports.generateName = generateName
+exports.generatePath = generatePath
