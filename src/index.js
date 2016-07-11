@@ -3,6 +3,7 @@
 let Path                = require( 'path' ),
     FS                  = require( 'fs' ),
     Crypto              = require( 'crypto' ),
+    Directives          = require( './directives' )( exports ),
 
     isSetted            = false,
     defaultOption       = {
@@ -106,6 +107,10 @@ exports.compile = compile = ( source, tmplFilePath ) => {
                 break
 
             default:
+                if ( Directives.hasDirective( fragment ) ) {
+                    tagEndPos = Directives.parse( fragment, source, tagStartPos + 2, tagEndPos )
+                    break
+                }
                 concatContent( fragment )
                 break
             }
@@ -114,7 +119,7 @@ exports.compile = compile = ( source, tmplFilePath ) => {
         }
     }
 
-    return codePrefix + contentStr
+    return contentStr
 }
 
 exports.compileFile = compileFile = ( tmplFilePath ) => {
@@ -134,14 +139,14 @@ exports.compileFile = compileFile = ( tmplFilePath ) => {
         source = BLANK
     }
 
-    return compile( source )
+    return codePrefix + compile( source )
 }
 
 exports.renderFile = renderFile = ( tmplFilePath, prefix, data ) => {
     let cp       = globalOption.compiledFolder + '/' + generateName( tmplFilePath, prefix ),
         tmplFn,
         _compile = () => {
-            FS.writeFileSync( cp, compile( tmplFilePath ) )
+            FS.writeFileSync( cp, compileFile( tmplFilePath ) )
             cachedFiles[ cp ] = true
             return renderFile( tmplFilePath, prefix, data )
         }
