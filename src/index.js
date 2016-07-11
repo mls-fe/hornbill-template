@@ -168,7 +168,6 @@ exports.compileFile = compileFile = ( tmplFilePath, prefix ) => {
         if( this.__base ) {
             var __base = this.__base;
             this.__base = null;
-            debugger
             this.__blocks = Object.assign( {}, __base.__blocks, this.__blocks )
             return __base.render.call( this )
         } else {
