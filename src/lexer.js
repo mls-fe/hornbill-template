@@ -8,11 +8,25 @@ const OFFSET_OF_TOKEN   = 2,
       TOKEN_VALUE       = '=',
       TOKEN_ESCAPE      = '==',
       TOKEN_JS          = 'js',
+      TOKEN_COMMENT     = '*',
+      TOKEN_IMPORT      = '#',
       TOKEN_DIR         = '!',
       TOKEN_DIR_EXTENDS = 'extends',
       TOKEN_DIR_BLOCK   = 'block',
       TOKEN_DIR_IMPORT  = 'import',
-      BLANK             = ''
+      rblank            = /\s+/
+
+function tokenHelper( type, offset ) {
+    let start = this._pos + OFFSET_OF_TOKEN + offset,
+        end   = this._source.indexOf( TOKEN_END, start )
+
+    this._pos = end + OFFSET_OF_TOKEN
+
+    return {
+        type,
+        value: this._source.substring( start, end )
+    }
+}
 
 class Tokenizer {
     constructor( source ) {
@@ -37,22 +51,23 @@ class Tokenizer {
     }
 
     next() {
-        if ( this._pos >= this._len ) {
-            return {
-                type: TOKEN_FINISHED
-            }
-        }
-
         let token
 
         if ( token = this.consumeHTML() ) {
             this._tokens.push( token )
         }
 
-        //must begin with "<%", so offset is 2
-        let start = this._pos + OFFSET_OF_TOKEN
+        if ( this._pos >= this._len ) {
+            return {
+                type: TOKEN_FINISHED
+            }
+        }
 
-        switch ( this._source[ start ] ) {
+        //must begin with "<%", so offset is 2
+        let start       = this._pos + OFFSET_OF_TOKEN,
+            specialChar = this._source[ start ]
+
+        switch ( specialChar ) {
         case TOKEN_VALUE:
             if ( this._source[ start + 1 ] === TOKEN_VALUE ) {
                 token = this.consumeEscape()
@@ -65,12 +80,17 @@ class Tokenizer {
             token = this.consumeDirective()
             break
 
-        case BLANK:
-            token = this.consumeJS()
+        case TOKEN_COMMENT:
+            token = this.consumeComment()
+            break
+
+        case TOKEN_IMPORT:
+            token = this.consumeImport()
             break
 
         default:
-            token = null
+            token = this.consumeJS()
+            break
         }
 
         return token
@@ -114,31 +134,24 @@ class Tokenizer {
         }
     }
 
+    consumeJS() {
+        return tokenHelper.call( this, TOKEN_JS, 0 )
+    }
+
     consumeValue() {
-        let start = this._pos + OFFSET_OF_TOKEN + 1,
-            end   = this._source.indexOf( TOKEN_END, start )
-
-        this._pos = end + OFFSET_OF_TOKEN
-
-        return {
-            type : TOKEN_VALUE,
-            value: this._source.substring( start, end )
-        }
+        return tokenHelper.call( this, TOKEN_VALUE, 1 )
     }
 
     consumeEscape() {
-        let start = this._pos + OFFSET_OF_TOKEN + 2,
-            end   = this._source.indexOf( TOKEN_END, start )
-
-        this._pos = end + OFFSET_OF_TOKEN
-
-        return {
-            type : TOKEN_ESCAPE,
-            value: this._source.substring( start, end )
-        }
+        return tokenHelper.call( this, TOKEN_ESCAPE, 2 )
     }
 
-    consumeJS() {
+    consumeComment() {
+        return tokenHelper.call( this, TOKEN_COMMENT, 1 )
+    }
+
+    consumeImport() {
+        return tokenHelper.call( this, TOKEN_IMPORT, 1 )
     }
 
     consumeDirective() {
