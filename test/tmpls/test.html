@@ -1,0 +1,22 @@
+<% extends './base.html' %>
+
+<% block content %>
+<time><%= this.time %></time>
+<%* this is a comment, it will never contained in compiled file. %>
+<%= "what is this?" %>
+<%= this.name + "--haha" %>
+<%
+function test() {
+console.log( 'this is a function.' );
+}
+
+test()
+%>
+
+<ul>
+    <% for(var i in this.items ) {%>
+    <li><%= "index = " + i %></li>
+    <% } %>
+</ul>
+
+<% endblock %>
