@@ -10,11 +10,16 @@ const OFFSET_OF_TOKEN   = 2,
       TOKEN_JS          = 'js',
       TOKEN_COMMENT     = '*',
       TOKEN_IMPORT      = '#',
-      TOKEN_DIR         = '!',
       TOKEN_DIR_EXTENDS = 'extends',
       TOKEN_DIR_BLOCK   = 'block',
-      TOKEN_DIR_IMPORT  = 'import',
-      rblank            = /\s+/
+      DIRECTIVE_SUFFIX  = 'end'
+
+let directives = [ {
+    name  : TOKEN_DIR_BLOCK,
+    hasEnd: true
+}, {
+    name: TOKEN_DIR_EXTENDS
+} ]
 
 function tokenHelper( type, offset ) {
     let start = this._pos + OFFSET_OF_TOKEN + offset,
@@ -76,10 +81,6 @@ class Tokenizer {
             token = this.consumeValue()
             break
 
-        case TOKEN_DIR:
-            token = this.consumeDirective()
-            break
-
         case TOKEN_COMMENT:
             token = this.consumeComment()
             break
@@ -110,6 +111,10 @@ class Tokenizer {
 
         this._isFinished = true
         return this._tokens
+    }
+
+    hasDirective() {
+//TODO
     }
 
     consumeHTML() {
@@ -160,11 +165,18 @@ class Tokenizer {
 
 module.exports = {
     lex( source ) {
-        return new Tokenizer( source )
+        return ( new Tokenizer( source ) ).run()
     },
 
     TOKEN_BEGIN,
     TOKEN_END,
     TOKEN_FINISHED,
-    TOKEN_HTML
+    TOKEN_HTML,
+    TOKEN_VALUE,
+    TOKEN_ESCAPE,
+    TOKEN_JS,
+    TOKEN_COMMENT,
+    TOKEN_IMPORT,
+    TOKEN_DIR_EXTENDS,
+    TOKEN_DIR_BLOCK
 }

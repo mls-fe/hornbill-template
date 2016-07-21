@@ -1,15 +1,17 @@
-var Lexer = require( '../../src/lexer' )
+var Lexer    = require( '../../src/lexer' ),
+    Compiler = require( '../../src/compiler' )
 
-var lexer = Lexer.lex( `
+var code = `
     <!DOCTYPE html>
     <html>
         <head>
             <title><%= this.title %></title>
         </head>
         <body>
+        <%# abc.html %>
         </body>
     </html>
-` )
+`
 
-//console.log( lexer.next() )
-console.log( lexer.run() )
+//console.log( Lexer.lex( code ) )
+console.log( Compiler.compile( code ) )
