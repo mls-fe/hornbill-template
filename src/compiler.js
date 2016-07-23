@@ -22,6 +22,10 @@ class Compiler {
                 this.emit( `\`${ token.value }\`` )
                 break
 
+            case Lexer.TOKEN_VALUE:
+                this.emit( `${ token.value }` )
+                break
+
             case Lexer.TOKEN_ESCAPE:
                 this.emit( `${ EXT_OBJECT }.htmlEncode(\`${ token.value }\`)` )
                 break
