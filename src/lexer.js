@@ -1,28 +1,36 @@
 'use strict'
 /* token type */
-const OFFSET_OF_TOKEN   = 2,
-      TOKEN_BEGIN       = '<%',
-      TOKEN_END         = '%>',
-      TOKEN_FINISHED    = -1,
-      TOKEN_HTML        = 'html',
-      TOKEN_VALUE       = '=',
-      TOKEN_ESCAPE      = '==',
-      TOKEN_JS          = 'js',
-      TOKEN_COMMENT     = '*',
-      TOKEN_IMPORT      = '#',
-      TOKEN_DIR_EXTENDS = 'extends',
-      TOKEN_DIR_BLOCK   = 'block',
-      DIRECTIVE_SUFFIX  = 'end'
+const OFFSET_OF_TOKEN       = 2,
+      TOKEN_BEGIN           = '<%',
+      TOKEN_END             = '%>',
+      TOKEN_FINISHED        = -1,
+      TOKEN_HTML            = 'html',
+      TOKEN_VALUE           = '=',
+      TOKEN_ESCAPE          = '==',
+      TOKEN_JS              = 'js',
+      TOKEN_COMMENT         = '*',
+      TOKEN_IMPORT          = '#',
+      TOKEN_DIR_EXTENDS     = 'extends',
+      TOKEN_DIR_BLOCK       = 'block',
+      TOKEN_DIR_EXTENDS_END = 'endextends',
+      TOKEN_DIR_BLOCK_END   = 'endblock',
+      PARENTHESIS_LEFT      = '(',
+      BRACE_LEFT            = '{'
 
 let directives = [ {
-    name  : TOKEN_DIR_BLOCK,
-    hasEnd: true
+    name: TOKEN_DIR_BLOCK
 }, {
     name: TOKEN_DIR_EXTENDS
+}, {
+    name : TOKEN_DIR_BLOCK_END,
+    isEnd: true
+}, {
+    name : TOKEN_DIR_EXTENDS_END,
+    isEnd: true
 } ]
 
 function tokenHelper( type, offset ) {
-    let start = this._pos + OFFSET_OF_TOKEN + offset,
+    let start = this._pos + OFFSET_OF_TOKEN + ( offset || 0 ),
         end   = this._source.indexOf( TOKEN_END, start )
 
     this._pos = end + OFFSET_OF_TOKEN
@@ -90,7 +98,11 @@ class Tokenizer {
             break
 
         default:
-            token = this.consumeJS()
+            //TODO: directive 与 js 的标识符相同, 是否需要引入新的语法?
+            token = this.consumeDirective()
+            if ( !token ) {
+                token = this.consumeJS()
+            }
             break
         }
 
@@ -113,8 +125,31 @@ class Tokenizer {
         return this._tokens
     }
 
-    hasDirective() {
-//TODO
+    peek( offset ) {
+        let start = this._pos + OFFSET_OF_TOKEN + offset,
+            end   = this._source.indexOf( TOKEN_END, start )
+
+        return this._source.substring( start, end )
+    }
+
+    //TODO: 是否需要严格判断?
+    getDirective() {
+        let fragments = this.peek( 0 ).trim()
+
+        return fragments && directives.filter( ( directive ) => {
+                let isDirective = false
+
+                if ( directive.isEnd ) {
+                    isDirective = directive.name === fragments
+                    //TODO: check if code contains { or (
+                } else if ( fragments.indexOf( directive.name ) === 0 &&
+                    fragments.indexOf( PARENTHESIS_LEFT ) === -1 &&
+                    fragments.indexOf( BRACE_LEFT ) === -1 ) {
+                    isDirective = true
+                }
+
+                return isDirective
+            } )
     }
 
     consumeHTML() {
@@ -160,6 +195,14 @@ class Tokenizer {
     }
 
     consumeDirective() {
+        let dir
+
+        if ( ( dir = this.getDirective() ) && dir.length > 0 ) {
+            console.log( dir )
+            return tokenHelper.call( this, dir[ 0 ].name )
+        } else {
+            return null
+        }
     }
 }
 
