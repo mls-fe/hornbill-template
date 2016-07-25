@@ -1,7 +1,7 @@
 var Lexer    = require( '../../src/lexer' ),
     Compiler = require( '../../src/compiler' )
 
-var code = `
+var code  = `
     <!DOCTYPE html>
     <html>
         <head>
@@ -9,9 +9,25 @@ var code = `
         </head>
         <body>
         <%# abc.html %>
+        <% block title %>
+        <div class="title-area">
+        </div>
+        <% endblock %>
+        
+        <% if ( this.is.not.a.directive ) {%>
+        <p>Not directive<p>
+        <% } %>
         </body>
     </html>
+`,
+    code1 = `
+    <% extends "a.html" %>
+    
+    <% block title %>
+            <div class="title-area">
+            </div>
+            <% endblock %>
 `
 
-//console.log( Lexer.lex( code ) )
-console.log( Compiler.compile( code ) )
+console.log( Lexer.lex( code1 ) )
+//console.log( Compiler.compile( code1 ) )
