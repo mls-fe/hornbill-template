@@ -1,13 +1,40 @@
 'use strict'
-let Lexer = require( './lexer' )
+let Lexer         = require( './lexer' ),
+    defaultConfig = {
+        fuss: false
+    },
+    normalSpace   = '  ',
+    rmorespace    = /\s{2,}/g,
+    rblank        = /^`?\s*`?$/,
+    stripCode     = ( code ) => {
+        return code.replace( rmorespace, normalSpace ).trim()
+    }
 
-const EXT_OBJECT = '__ext',
-      SPLITTER   = ';\n'
+const
+    EXT_OBJECT = '__ext',
+    SPLITTER   = ';\n'
 
 class Compiler {
-    constructor( source ) {
+    constructor( source, config ) {
         this._tokens = Lexer.lex( source )
         this._codes  = []
+        this._config = Object.assign( {}, defaultConfig, config )
+
+        if ( this._config.fuss ) {
+            this.emit = ( fragment, notConcat ) => {
+                fragment = stripCode( fragment )
+
+                if ( rblank.test( fragment ) ) {
+                    return
+                }
+
+                this._codes.push( notConcat ? fragment : `__html += ${ fragment }` )
+            }
+        } else {
+            this.emit = ( fragment, notConcat ) => {
+                this._codes.push( notConcat ? fragment : `__html += ${ fragment }` )
+            }
+        }
     }
 
     run() {
@@ -42,15 +69,10 @@ class Compiler {
 
         return this._codes.join( SPLITTER )
     }
-
-    emit( fragment, notConcat ) {
-        let code = notConcat ? fragment : `__html += ${ fragment }`
-        this._codes.push( code )
-    }
 }
 
 module.exports = {
-    compile( source ) {
-        return ( new Compiler( source ) ).run()
+    compile( source, config ) {
+        return ( new Compiler( source, config ) ).run()
     }
 }

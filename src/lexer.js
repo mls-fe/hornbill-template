@@ -1,21 +1,22 @@
 'use strict'
 /* token type */
-const OFFSET_OF_TOKEN       = 2,
-      TOKEN_BEGIN           = '<%',
-      TOKEN_END             = '%>',
-      TOKEN_FINISHED        = -1,
-      TOKEN_HTML            = 'html',
-      TOKEN_VALUE           = '=',
-      TOKEN_ESCAPE          = '==',
-      TOKEN_JS              = 'js',
-      TOKEN_COMMENT         = '*',
-      TOKEN_IMPORT          = '#',
-      TOKEN_DIR_EXTENDS     = 'extends',
-      TOKEN_DIR_BLOCK       = 'block',
-      TOKEN_DIR_EXTENDS_END = 'endextends',
-      TOKEN_DIR_BLOCK_END   = 'endblock',
-      PARENTHESIS_LEFT      = '(',
-      BRACE_LEFT            = '{'
+const
+    OFFSET_OF_TOKEN       = 2,
+    TOKEN_BEGIN           = '<%',
+    TOKEN_END             = '%>',
+    TOKEN_FINISHED        = -1,
+    TOKEN_HTML            = 'html',
+    TOKEN_VALUE           = '=',
+    TOKEN_ESCAPE          = '==',
+    TOKEN_JS              = 'js',
+    TOKEN_COMMENT         = '*',
+    TOKEN_IMPORT          = '#',
+    TOKEN_DIR_EXTENDS     = 'extends',
+    TOKEN_DIR_BLOCK       = 'block',
+    TOKEN_DIR_EXTENDS_END = 'endextends',
+    TOKEN_DIR_BLOCK_END   = 'endblock',
+    PARENTHESIS_LEFT      = '(',
+    BRACE_LEFT            = '{'
 
 let directives = [ {
     name: TOKEN_DIR_BLOCK
@@ -65,10 +66,11 @@ class Tokenizer {
 
     next() {
         let token
-
+        /* eslint-disable */
         if ( token = this.consumeHTML() ) {
             this._tokens.push( token )
         }
+        /* eslint-enable */
 
         if ( this._pos >= this._len ) {
             return {
@@ -136,20 +138,21 @@ class Tokenizer {
     getDirective() {
         let fragments = this.peek( 0 ).trim()
 
-        return fragments && directives.filter( ( directive ) => {
-                let isDirective = false
+        return fragments && directives.filter(
+                ( directive ) => {
+                    let isDirective = false
 
-                if ( directive.isEnd ) {
-                    isDirective = directive.name === fragments
-                    //TODO: check if code contains { or (
-                } else if ( fragments.indexOf( directive.name ) === 0 &&
-                    fragments.indexOf( PARENTHESIS_LEFT ) === -1 &&
-                    fragments.indexOf( BRACE_LEFT ) === -1 ) {
-                    isDirective = true
-                }
+                    if ( directive.isEnd ) {
+                        isDirective = directive.name === fragments
+                        //TODO: check if code contains { or (
+                    } else if ( fragments.indexOf( directive.name ) === 0 &&
+                        fragments.indexOf( PARENTHESIS_LEFT ) === -1 &&
+                        fragments.indexOf( BRACE_LEFT ) === -1 ) {
+                        isDirective = true
+                    }
 
-                return isDirective
-            } )
+                    return isDirective
+                } )
     }
 
     consumeHTML() {
