@@ -1,9 +1,9 @@
-<% extends './base.html' %>
+<%@ extends './base.html' %>
 
-<% block content %>
+<%@ block content %>
 <time><%= this.time %></time>
 <%* this is a comment, it will never contained in compiled file. %>
-<%= "what is this?" %>
+<%== "<hello>" %>
 <%= this.name + "--haha" %>
 <%
 function test() {
@@ -19,4 +19,4 @@ test()
     <% } %>
 </ul>
 
-<% endblock %>
+<%@ endblock %>

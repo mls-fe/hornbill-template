@@ -7,9 +7,9 @@
 - <%= return Value %>
 - <%== encode Return Value %>
 - <%# import another template %>
-- <% directive %>
+- <%@ directive %>
 
 ## directive
 
-- extends
-- block
+- for
+- if

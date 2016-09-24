@@ -11,10 +11,15 @@ const
     TOKEN_JS              = 'js',
     TOKEN_COMMENT         = '*',
     TOKEN_IMPORT          = '#',
+    TOKEN_DIR             = '@',
     TOKEN_DIR_EXTENDS     = 'extends',
     TOKEN_DIR_BLOCK       = 'block',
+    TOKEN_DIR_FOR         = 'for',
+    TOKEN_DIR_IF          = 'if',
     TOKEN_DIR_EXTENDS_END = 'endextends',
     TOKEN_DIR_BLOCK_END   = 'endblock',
+    TOKEN_DIR_FOR_END     = 'endfor',
+    TOKEN_DIR_IF_END      = 'endif',
     PARENTHESIS_LEFT      = '(',
     BRACE_LEFT            = '{'
 
@@ -23,10 +28,20 @@ let directives = [ {
 }, {
     name: TOKEN_DIR_EXTENDS
 }, {
+    name: TOKEN_DIR_FOR
+}, {
+    name: TOKEN_DIR_IF
+}, {
     name : TOKEN_DIR_BLOCK_END,
     isEnd: true
 }, {
     name : TOKEN_DIR_EXTENDS_END,
+    isEnd: true
+}, {
+    name : TOKEN_DIR_FOR_END,
+    isEnd: true
+}, {
+    name : TOKEN_DIR_IF_END,
     isEnd: true
 } ]
 
@@ -99,12 +114,12 @@ class Tokenizer {
             token = this.consumeImport()
             break
 
-        default:
-            //TODO: directive 与 js 的标识符相同, 是否需要引入新的语法?
+        case TOKEN_DIR:
             token = this.consumeDirective()
-            if ( !token ) {
-                token = this.consumeJS()
-            }
+            break
+
+        default:
+            token = this.consumeJS()
             break
         }
 
@@ -136,7 +151,7 @@ class Tokenizer {
 
     //TODO: 是否需要严格判断?
     getDirective() {
-        let fragments = this.peek( 0 ).trim()
+        let fragments = this.peek( 1 ).trim()
 
         return fragments && directives.filter(
                 ( directive ) => {
@@ -201,7 +216,7 @@ class Tokenizer {
         let dir
 
         if ( ( dir = this.getDirective() ) && dir.length > 0 ) {
-            return tokenHelper.call( this, dir[ 0 ].name )
+            return tokenHelper.call( this, dir[ 0 ].name, 1 )
         } else {
             return null
         }
@@ -222,6 +237,7 @@ module.exports = {
     TOKEN_JS,
     TOKEN_COMMENT,
     TOKEN_IMPORT,
+    TOKEN_DIR,
     TOKEN_DIR_EXTENDS,
     TOKEN_DIR_BLOCK
 }
