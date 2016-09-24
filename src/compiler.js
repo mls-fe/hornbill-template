@@ -12,7 +12,10 @@ let Lexer         = require( './lexer' ),
 
 const
     EXT_OBJECT  = '__ext',
-    HTML_BOJECT = '__html',
+    HTML_OBJECT = '__html',
+    TE_OBJECT   = '__template_engine',
+    PATH_OBJECT = '__path',
+    DIR_OBJECT  = '__dirname',
     SPLITTER    = ';\n'
 
 class Compiler {
@@ -29,11 +32,11 @@ class Compiler {
                     return
                 }
 
-                this._codes.push( notConcat ? fragment : `${ HTML_BOJECT } += ${ fragment }` )
+                this._codes.push( notConcat ? fragment : `${ HTML_OBJECT } += ${ fragment }` )
             }
         } else {
             this.emit = ( fragment, notConcat ) => {
-                this._codes.push( notConcat ? fragment : `${ HTML_BOJECT } += ${ fragment }` )
+                this._codes.push( notConcat ? fragment : `${ HTML_OBJECT } += ${ fragment }` )
             }
         }
     }
@@ -63,7 +66,9 @@ class Compiler {
                 break
 
             case Lexer.TOKEN_IMPORT:
-                this.emit( `${ EXT_OBJECT }.import( '${ token.value }')` )
+                this.emit( `${ TE_OBJECT }.render( ${ PATH_OBJECT }.resolve( ${ DIR_OBJECT }, ${ token.value } ), this, ( data ) => {`, true )
+                this.emit( 'data' )
+                this.emit( '} )', true )
                 break
             }
         }
@@ -76,10 +81,13 @@ class Compiler {
             sourceCode = `
 'use strict'
 let ${ EXT_OBJECT } = this.${ EXT_OBJECT },
+    ${ TE_OBJECT } = this.${ TE_OBJECT },
+    ${ PATH_OBJECT } = this.${ PATH_OBJECT },
+    ${ DIR_OBJECT } = this.${ DIR_OBJECT },
     coreFn = function() {
-        let ${ HTML_BOJECT } = ''
+        let ${ HTML_OBJECT } = ''
         ${ codeBlock }
-        return ${ HTML_BOJECT }
+        return ${ HTML_OBJECT }
     },
     resultFn = function() {
         try {
@@ -89,7 +97,6 @@ let ${ EXT_OBJECT } = this.${ EXT_OBJECT },
             return
         } 
     }
-
 return resultFn.call( this )
 `
         return sourceCode
@@ -102,5 +109,10 @@ module.exports = {
         return compiler
             .run()
             .getCode()
-    }
+    },
+
+    EXT_OBJECT : EXT_OBJECT,
+    TE_OBJECT  : TE_OBJECT,
+    PATH_OBJECT: PATH_OBJECT,
+    DIR_OBJECT : DIR_OBJECT
 }

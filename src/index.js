@@ -29,16 +29,30 @@ Template = {
                 fn = this.compile( codes )
                 cache.set( filepath, fn )
             } catch ( e ) {
-                throw Error( `${filepath} not exist.` )
+                /* eslint-disable */
+                console.log( `parse ${filepath} error.` )
+                console.log( e )
+                /* eslint-enable */
             }
         }
 
         typeof callback === 'function' && callback( fn.call( Object.assign( {}, data, {
-            __ext: Ext
+            [ Compiler.EXT_OBJECT ] : Ext,
+            [ Compiler.TE_OBJECT ]  : Template,
+            [ Compiler.PATH_OBJECT ]: Path,
+            [ Compiler.DIR_OBJECT ] : Path.dirname( filepath )
         } ) ) )
     },
 
-    renderString( str, data, callback ) {
+    renderString( codes, data, callback ) {
+        let fn = this.compile( codes )
+
+        typeof callback === 'function' && callback( fn.call( Object.assign( {}, data, {
+            [ Compiler.EXT_OBJECT ] : Ext,
+            [ Compiler.TE_OBJECT ]  : Template,
+            [ Compiler.PATH_OBJECT ]: Path,
+            [ Compiler.DIR_OBJECT ] : __dirname
+        } ) ) )
     }
 }
 

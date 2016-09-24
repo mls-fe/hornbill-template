@@ -201,7 +201,6 @@ class Tokenizer {
         let dir
 
         if ( ( dir = this.getDirective() ) && dir.length > 0 ) {
-            console.log( dir )
             return tokenHelper.call( this, dir[ 0 ].name )
         } else {
             return null

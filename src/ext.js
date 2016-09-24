@@ -16,10 +16,6 @@ let Ext = {
 
     urlEncode( str ) {
         return encodeURIComponent( str )
-    },
-
-    import( tmpl ) {
-
     }
 }
 
