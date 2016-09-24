@@ -11,8 +11,9 @@ let Lexer         = require( './lexer' ),
     }
 
 const
-    EXT_OBJECT = '__ext',
-    SPLITTER   = ';\n'
+    EXT_OBJECT  = '__ext',
+    HTML_BOJECT = '__html',
+    SPLITTER    = ';\n'
 
 class Compiler {
     constructor( source, config ) {
@@ -28,11 +29,11 @@ class Compiler {
                     return
                 }
 
-                this._codes.push( notConcat ? fragment : `__html += ${ fragment }` )
+                this._codes.push( notConcat ? fragment : `${ HTML_BOJECT } += ${ fragment }` )
             }
         } else {
             this.emit = ( fragment, notConcat ) => {
-                this._codes.push( notConcat ? fragment : `__html += ${ fragment }` )
+                this._codes.push( notConcat ? fragment : `${ HTML_BOJECT } += ${ fragment }` )
             }
         }
     }
@@ -67,12 +68,39 @@ class Compiler {
             }
         }
 
-        return this._codes.join( SPLITTER )
+        return this
+    }
+
+    getCode() {
+        let codeBlock  = this._codes.join( SPLITTER ),
+            sourceCode = `
+'use strict'
+let ${ EXT_OBJECT } = this.${ EXT_OBJECT },
+    coreFn = function() {
+        let ${ HTML_BOJECT } = ''
+        ${ codeBlock }
+        return ${ HTML_BOJECT }
+    },
+    resultFn = function() {
+        try {
+            return coreFn.call( this )
+        } catch( e ) {
+            console.error( e )
+            return
+        } 
+    }
+
+return resultFn.call( this )
+`
+        return sourceCode
     }
 }
 
 module.exports = {
     compile( source, config ) {
-        return ( new Compiler( source, config ) ).run()
+        let compiler = new Compiler( source, config )
+        return compiler
+            .run()
+            .getCode()
     }
 }
