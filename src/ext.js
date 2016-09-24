@@ -16,6 +16,19 @@ let Ext = {
 
     urlEncode( str ) {
         return encodeURIComponent( str )
+    },
+
+    each( obj, handler ) {
+        if ( Array.isArray( obj ) ) {
+            for ( let i = 0; i < obj.length; i++ ) {
+                handler.call( null, obj[ i ], i, obj )
+            }
+        } else {
+            Object.getOwnPropertyNames( obj )
+                .forEach( ( key ) => {
+                    handler.call( null, obj[ key ], key, obj )
+                } )
+        }
     }
 }
 

@@ -160,7 +160,7 @@ class Tokenizer {
                     if ( directive.isEnd ) {
                         isDirective = directive.name === fragments
                         //TODO: check if code contains { or (
-                    } else if ( fragments.indexOf( directive.name ) === 0 &&
+                    } else if ( fragments.indexOf( directive.name + ' ' ) === 0 &&
                         fragments.indexOf( PARENTHESIS_LEFT ) === -1 &&
                         fragments.indexOf( BRACE_LEFT ) === -1 ) {
                         isDirective = true
@@ -238,6 +238,12 @@ module.exports = {
     TOKEN_COMMENT,
     TOKEN_IMPORT,
     TOKEN_DIR,
+    TOKEN_DIR_FOR,
+    TOKEN_DIR_IF,
     TOKEN_DIR_EXTENDS,
-    TOKEN_DIR_BLOCK
+    TOKEN_DIR_BLOCK,
+    TOKEN_DIR_FOR_END,
+    TOKEN_DIR_IF_END,
+    TOKEN_DIR_EXTENDS_END,
+    TOKEN_DIR_BLOCK_END
 }

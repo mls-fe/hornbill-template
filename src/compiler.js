@@ -6,6 +6,8 @@ let Lexer         = require( './lexer' ),
     normalSpace   = '  ',
     rmorespace    = /\s{2,}/g,
     rblank        = /^`?\s*`?$/,
+    rfor          = /^for\s+(.+?)\s+in\s+(.+)$/,
+    rif           = /^if\s+(.+)$/,
     stripCode     = ( code ) => {
         return code.replace( rmorespace, normalSpace ).trim()
     }
@@ -16,7 +18,7 @@ const
     TE_OBJECT   = '__template_engine',
     PATH_OBJECT = '__path',
     DIR_OBJECT  = '__dirname',
-    SPLITTER    = ';\n'
+    SPLITTER    = '\n'
 
 class Compiler {
     constructor( source, config ) {
@@ -41,10 +43,46 @@ class Compiler {
         }
     }
 
+    //TODO
+    parseForDirective( token ) {
+        let value = token.value.trim(),
+            match = value.match( rfor )
+
+        /* match: value, key, expr */
+        if ( match && match.length === 3 ) {
+            let keyAndVal = match[ 1 ].split( ',' ),
+                key, val
+
+            if ( keyAndVal.length > 1 ) {
+                key = keyAndVal[ 0 ]
+                val = keyAndVal[ 1 ]
+            } else {
+                key = keyAndVal[ 0 ]
+                val = '_'
+            }
+
+            this.emit( `${ EXT_OBJECT }.each( ${ match[ 2 ]}, ( ${ val }, ${ key } ) => {`, true )
+        } else {
+            throw Error( `parse 'for' error: \n ${ value }` )
+        }
+    }
+
+    //TODO
+    parseIfDirective( token ) {
+        let value = token.value.trim(),
+            match = value.match( rif )
+
+        if ( match && match[ 1 ] ) {
+            this.emit( `if ( ${ match[ 1 ] } || 0 ) {`, true )
+        } else {
+            throw Error( `parse 'if' error: \n ${ value }` )
+        }
+    }
+
     run() {
         let tokens = this._tokens,
             token
-
+//        console.log( tokens )
         while ( tokens.length ) {
             token = tokens.shift()
 
@@ -70,6 +108,22 @@ class Compiler {
                 this.emit( 'data' )
                 this.emit( '} )', true )
                 break
+
+            case Lexer.TOKEN_DIR_FOR:
+                this.parseForDirective( token )
+                break
+
+            case Lexer.TOKEN_DIR_IF:
+                this.parseIfDirective( token )
+                break
+
+            case Lexer.TOKEN_DIR_FOR_END:
+                this.emit( '})', true )
+                break
+
+            case Lexer.TOKEN_DIR_IF_END:
+                this.emit( '}', true )
+                break
             }
         }
 
@@ -94,7 +148,7 @@ let ${ EXT_OBJECT } = this.${ EXT_OBJECT },
             return coreFn.call( this )
         } catch( e ) {
             console.error( e )
-            return
+            return null
         } 
     }
 return resultFn.call( this )
