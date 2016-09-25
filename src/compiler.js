@@ -16,9 +16,7 @@ let Lexer            = require( './lexer' ),
 
     wrapValue        = ( value ) => {
         value = value.trim()
-        if ( !value.match( rquote ) ) {
-            return '"' + value + '"'
-        }
+        return !value.match( rquote ) ? `"${ value }"` : value
     },
 
     /**
