@@ -1,22 +1,45 @@
 'use strict'
-let Lexer         = require( './lexer' ),
-    defaultConfig = {
+let Lexer            = require( './lexer' ),
+    defaultConfig    = {
         fuss: false
     },
-    normalSpace   = '  ',
-    rmorespace    = /\s{2,}/g,
-    rblank        = /^`?\s*`?$/,
-    rfor          = /^for\s+(.+?)\s+in\s+(.+)$/,
-    rif           = /^if\s+(.+)$/,
-    rquote        = /^(?:"|')/,
-    stripCode     = ( code ) => {
+    normalSpace      = '  ',
+    rmorespace       = /\s{2,}/g,
+    rblank           = /^`?\s*`?$/,
+    rfor             = /^for\s+(.+?)\s+in\s+(.+)$/,
+    rif              = /^if\s+(.+)$/,
+    rquote           = /^(?:"|')/,
+
+    stripCode        = ( code ) => {
         return code.replace( rmorespace, normalSpace ).trim()
     },
-    wrapValue     = ( value ) => {
+
+    wrapValue        = ( value ) => {
         value = value.trim()
         if ( !value.match( rquote ) ) {
             return '"' + value + '"'
         }
+    },
+
+    /**
+     *only expr contains dot
+     * input: a.b.c
+     * output: a && a.b && a.b.c
+     */
+    generateValCheck = ( expr ) => {
+        if ( expr.includes( DOT ) ) {
+            let arr = expr.split( DOT )
+
+            arr = arr.map( ( v, i ) => {
+                return v === THIS ? null : arr.slice( 0, i + 1 ).join( DOT )
+            } )
+
+            //do not check 'this'
+            arr[ 0 ] === null && arr.splice( 0, 1 )
+            return arr.join( ' && ' )
+        }
+
+        return expr
     }
 
 const
@@ -25,7 +48,9 @@ const
     TE_OBJECT   = '__template_engine',
     PATH_OBJECT = '__path',
     DIR_OBJECT  = '__dirname',
-    SPLITTER    = '\n'
+    SPLITTER    = '\n',
+    DOT         = '.',
+    THIS        = 'this'
 
 class Compiler {
     constructor( source, config ) {
@@ -68,7 +93,7 @@ class Compiler {
                 val = '_'
             }
 
-            this.emit( `${ EXT_OBJECT }.each( ${ match[ 2 ]}, ( ${ val }, ${ key } ) => {`, true )
+            this.emit( `${ EXT_OBJECT }.each( ${ generateValCheck( match[ 2 ] ) }, ( ${ val }, ${ key } ) => {`, true )
         } else {
             throw Error( `parse 'for' error: \n ${ value }` )
         }
@@ -80,7 +105,7 @@ class Compiler {
             match = value.match( rif )
 
         if ( match && match[ 1 ] ) {
-            this.emit( `if ( ${ match[ 1 ] } || 0 ) {`, true )
+            this.emit( `if ( ${ generateValCheck( match[ 1 ] ) } ) {`, true )
         } else {
             throw Error( `parse 'if' error: \n ${ value }` )
         }

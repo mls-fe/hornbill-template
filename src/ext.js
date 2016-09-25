@@ -19,6 +19,10 @@ let Ext = {
     },
 
     each( obj, handler ) {
+        if ( !obj || !handler ) {
+            return
+        }
+
         if ( Array.isArray( obj ) ) {
             for ( let i = 0; i < obj.length; i++ ) {
                 handler.call( null, obj[ i ], i, obj )
