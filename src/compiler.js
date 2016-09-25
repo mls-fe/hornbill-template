@@ -8,8 +8,15 @@ let Lexer         = require( './lexer' ),
     rblank        = /^`?\s*`?$/,
     rfor          = /^for\s+(.+?)\s+in\s+(.+)$/,
     rif           = /^if\s+(.+)$/,
+    rquote        = /^(?:"|')/,
     stripCode     = ( code ) => {
         return code.replace( rmorespace, normalSpace ).trim()
+    },
+    wrapValue     = ( value ) => {
+        value = value.trim()
+        if ( !value.match( rquote ) ) {
+            return '"' + value + '"'
+        }
     }
 
 const
@@ -104,7 +111,7 @@ class Compiler {
                 break
 
             case Lexer.TOKEN_IMPORT:
-                this.emit( `${ TE_OBJECT }.render( ${ PATH_OBJECT }.resolve( ${ DIR_OBJECT }, ${ token.value } ), this, ( data ) => {`, true )
+                this.emit( `;( new ${ TE_OBJECT } ).render( ${ PATH_OBJECT }.resolve( ${ DIR_OBJECT }, ${ wrapValue( token.value ) } ), this, ( data ) => {`, true )
                 this.emit( 'data' )
                 this.emit( '} )', true )
                 break
