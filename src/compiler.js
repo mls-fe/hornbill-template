@@ -57,11 +57,13 @@ class Compiler {
         this._config = Object.assign( {}, defaultConfig, config )
 
         if ( this._config.fuss ) {
-            this.emit = ( fragment, notConcat ) => {
-                fragment = stripCode( fragment )
+            this.emit = ( fragment, notConcat, notFuss ) => {
+                if ( !notFuss ) {
+                    fragment = stripCode( fragment )
 
-                if ( rblank.test( fragment ) ) {
-                    return
+                    if ( rblank.test( fragment ) ) {
+                        return
+                    }
                 }
 
                 this._codes.push( notConcat ? fragment : `${ HTML_OBJECT } += ${ fragment }` )
@@ -112,7 +114,7 @@ class Compiler {
     run() {
         let tokens = this._tokens,
             token
-//        console.log( tokens )
+
         while ( tokens.length ) {
             token = tokens.shift()
 
@@ -130,7 +132,7 @@ class Compiler {
                 break
 
             case Lexer.TOKEN_JS:
-                this.emit( `${ token.value }`, true )
+                this.emit( `${ token.value }`, true, true )
                 break
 
             case Lexer.TOKEN_IMPORT:
