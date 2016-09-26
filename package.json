@@ -1,0 +1,23 @@
+{
+  "name": "hornbill-template",
+  "version": "1.0.0",
+  "description": "template engine",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mls-fe/hornbill-template.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mls-fe/hornbill-template/issues"
+  },
+  "homepage": "https://github.com/mls-fe/hornbill-template#readme"
+}

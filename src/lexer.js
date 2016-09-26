@@ -149,7 +149,6 @@ class Tokenizer {
         return this._source.substring( start, end )
     }
 
-    //TODO: 是否需要严格判断?
     getDirective() {
         let fragments = this.peek( 1 ).trim()
 
