@@ -1,28 +1,72 @@
 'use strict'
 
-let Path          = require( 'path' ),
-    FS            = require( 'fs' ),
-    EventEmitter  = require( 'events' ),
-    Compiler      = require( './compiler' ),
-    Ext           = require( './ext' ),
-    cache         = new Map(),
-    defaultConfig = {
+let Path                  = require( 'path' ),
+    FS                    = require( 'fs' ),
+
+    Crypto                = require( 'crypto' ),
+    EventEmitter          = require( 'events' ),
+    Compiler              = require( './compiler' ),
+    Ext                   = require( './ext' ),
+    cache                 = new Map(),
+    defaultConfig         = {
         errorHandler( err ) {
             /* eslint-disable */
             console.error( err )
             /* eslint-enable */
         }
+    },
+
+    defaultPreCompileOpts = {
+        isFile: true,
+        dest  : './tmp',
+        ext   : 'tmp'
     }
 
 class Template extends EventEmitter {
-    constructor( config ) {
+    constructor( opts ) {
         super()
-        this._config = Object.assign( {}, defaultConfig, config )
+        this._config = Object.assign( {}, defaultConfig, opts )
     }
 
-    compile( codes, config ) {
-        let sourceCode = Compiler.compile( codes, config )
+    compile( codes, opts ) {
+        let sourceCode = Compiler.compile( codes, opts )
         return new Function( sourceCode )
+    }
+
+    preCompile( src, opts ) {
+        opts      = Object.assign( {}, defaultPreCompileOpts, opts )
+        opts.dest = Path.resolve( opts.dest )
+
+        let content
+
+        if ( opts.isFile ) {
+            try {
+                content = FS.readFileSync( src, {
+                    encoding: 'utf8'
+                } )
+            } catch ( e ) {
+                /* eslint-disable */
+                console.error( `${ src } is not exist.\n${ e }` )
+                /* eslint-enable */
+            }
+        } else {
+            content = src
+        }
+
+        let sourceCode = Compiler.compile( content, opts )
+
+        try {
+            if ( !FS.statSync( opts.dest ).isDirectory() ) {
+                FS.mkdirSync( opts.dest )
+            }
+
+            let filename = this.generateName( src )
+            FS.writeFileSync( Path.resolve( opts.dest, filename + '.' + opts.ext ), sourceCode )
+        } catch ( e ) {
+            /* eslint-disable */
+            cosole.error( `create ${ opts.dest } failed.\n${ e }` )
+            /* eslint-enable */
+        }
     }
 
     render( filepath, data, callback ) {
@@ -43,7 +87,7 @@ class Template extends EventEmitter {
                 cache.set( filepath, fn )
             } catch ( e ) {
                 /* eslint-disable */
-                console.log( `parse ${filepath} error.` )
+                console.log( `parse ${ filepath } error.` )
                 console.log( e )
                 /* eslint-enable */
             }
@@ -79,6 +123,10 @@ class Template extends EventEmitter {
         }
 
         return this
+    }
+
+    generateName( str ) {
+        return Crypto.createHash( 'md5' ).update( str ).digest( 'hex' )
     }
 }
 
