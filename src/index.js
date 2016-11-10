@@ -2,7 +2,6 @@
 
 let Path                  = require( 'path' ),
     FS                    = require( 'fs' ),
-
     Crypto                = require( 'crypto' ),
     EventEmitter          = require( 'events' ),
     Compiler              = require( './compiler' ),

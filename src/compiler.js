@@ -1,44 +1,16 @@
 'use strict'
 let Lexer            = require( './lexer' ),
+    Util             = require( './util' ),
     defaultConfig    = {
         fuss: false
     },
-    normalSpace      = '  ',
-    rmorespace       = /\s{2,}/g,
     rblank           = /^`?\s*`?$/,
     rfor             = /^for\s+(.+?)\s+in\s+(.+)$/,
     rif              = /^if\s+(.+)$/,
-    rquote           = /^(?:"|')/,
 
-    stripCode        = ( code ) => {
-        return code.replace( rmorespace, normalSpace ).trim()
-    },
-
-    wrapValue        = ( value ) => {
-        value = value.trim()
-        return !value.match( rquote ) ? `"${ value }"` : value
-    },
-
-    /**
-     *only expr contains dot
-     * input: a.b.c
-     * output: a && a.b && a.b.c
-     */
-    generateValCheck = ( expr ) => {
-        if ( expr.includes( DOT ) ) {
-            let arr = expr.split( DOT )
-
-            arr = arr.map( ( v, i ) => {
-                return v === THIS ? null : arr.slice( 0, i + 1 ).join( DOT )
-            } )
-
-            //do not check 'this'
-            arr[ 0 ] === null && arr.splice( 0, 1 )
-            return arr.join( ' && ' )
-        }
-
-        return expr
-    }
+    stripCode        = Util.stripCode,
+    generateValCheck = Util.generateValCheck,
+    wrapValue        = Util.wrapValue
 
 const
     EXT_OBJECT  = '__ext',
@@ -46,9 +18,7 @@ const
     TE_OBJECT   = '__template_engine',
     PATH_OBJECT = '__path',
     DIR_OBJECT  = '__dirname',
-    SPLITTER    = '\n',
-    DOT         = '.',
-    THIS        = 'this'
+    SPLITTER    = '\n'
 
 class Compiler {
     constructor( source, config ) {
