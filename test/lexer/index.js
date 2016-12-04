@@ -1,33 +1,13 @@
-var Lexer    = require( '../../src/lexer' ),
-    Compiler = require( '../../src/compiler' )
+import test from 'ava'
+import Lexer from '../../src/lexer'
 
-var code  = `
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title><%= this.title %></title>
-        </head>
-        <body>
-        <%# abc.html %>
-        <% block title %>
-        <div class="title-area">
-        </div>
-        <% endblock %>
-        
-        <% if ( this.is.not.a.directive ) {%>
-        <p>Not directive<p>
-        <% } %>
-        </body>
-    </html>
-`,
-    code1 = `
-    <% extends "a.html" %>
-    
-    <% block title %>
-            <div class="title-area">
-            </div>
-            <% endblock %>
-`
-
-console.log( Lexer.lex( code1 ) )
-//console.log( Compiler.compile( code1 ) )
+test( 'pure html', ( t ) => {
+    let html = '<html></html>'
+    t.deepEqual( Lexer.lex( html ),
+        [ {
+            type : Lexer.TOKEN_HTML,
+            value: html
+        }, {
+            type: Lexer.TOKEN_FINISHED
+        } ] )
+} )

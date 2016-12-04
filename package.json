@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "eslint": "eslint src/**",
+    "test": "ava"
   },
   "repository": {
     "type": "git",
@@ -19,5 +20,14 @@
   "bugs": {
     "url": "https://github.com/mls-fe/hornbill-template/issues"
   },
-  "homepage": "https://github.com/mls-fe/hornbill-template#readme"
+  "homepage": "https://github.com/mls-fe/hornbill-template#readme",
+  "devDependencies": {
+    "ava": "^0.17.0",
+    "eslint": "^3.11.1"
+  },
+  "ava": {
+    "concurrency": 5,
+    "failFast": true,
+    "powerAssert": false
+  }
 }
