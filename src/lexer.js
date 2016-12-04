@@ -174,6 +174,10 @@ class Tokenizer {
             end   = 0,
             pos   = this._source.indexOf( TOKEN_BEGIN, start )
 
+        if ( start === this._len ) {
+            return
+        }
+
         if ( pos === -1 ) {
             end = this._len
         } else {
