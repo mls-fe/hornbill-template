@@ -50,7 +50,11 @@ class Compiler {
         let value = token.value.trim(),
             match = value.match( rfor )
 
-        /* match: value, key, expr */
+        /**
+         * match: value, key, expr
+         * for key, value in obj
+         * for value in array
+         */
         if ( match && match.length === 3 ) {
             let keyAndVal = match[ 1 ].split( ',' ),
                 key, val
@@ -59,8 +63,8 @@ class Compiler {
                 key = keyAndVal[ 0 ]
                 val = keyAndVal[ 1 ]
             } else {
-                key = keyAndVal[ 0 ]
-                val = '_'
+                key = '_'
+                val = keyAndVal[ 0 ]
             }
 
             this.emit( `${ EXT_OBJECT }.each( ${ generateValCheck( match[ 2 ] ) }, ( ${ val }, ${ key } ) => {`, true )

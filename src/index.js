@@ -17,7 +17,6 @@ let Path                  = require( 'path' ),
 
     defaultPreCompileOpts = {
         isFile: true,
-        dest  : './tmp',
         ext   : 'tmp'
     }
 
@@ -33,8 +32,7 @@ class Template extends EventEmitter {
     }
 
     preCompile( src, opts ) {
-        opts      = Object.assign( {}, defaultPreCompileOpts, opts )
-        opts.dest = Path.resolve( opts.dest )
+        opts = Object.assign( {}, defaultPreCompileOpts, opts )
 
         let content
 
@@ -54,17 +52,23 @@ class Template extends EventEmitter {
 
         let sourceCode = Compiler.compile( content, opts )
 
-        try {
-            if ( !FS.statSync( opts.dest ).isDirectory() ) {
-                FS.mkdirSync( opts.dest )
-            }
+        if ( opts.dest ) {
+            let dest = Path.resolve( opts.dest )
 
-            let filename = this.generateName( src )
-            FS.writeFileSync( Path.resolve( opts.dest, filename + '.' + opts.ext ), sourceCode )
-        } catch ( e ) {
-            /* eslint-disable */
-            cosole.error( `create ${ opts.dest } failed.\n${ e }` )
-            /* eslint-enable */
+            try {
+                if ( !FS.statSync( dest ).isDirectory() ) {
+                    FS.mkdirSync( dest )
+                }
+
+                let filename = this.generateName( src )
+                FS.writeFileSync( Path.resolve( dest, filename + '.' + opts.ext ), sourceCode )
+            } catch ( e ) {
+                /* eslint-disable */
+                console.error( `create ${ dest } failed.\n${ e }` )
+                /* eslint-enable */
+            }
+        } else {
+            return sourceCode
         }
     }
 
