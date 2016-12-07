@@ -29,7 +29,7 @@ class Template extends EventEmitter {
 
     compile( codes, opts ) {
         let sourceCode = Compiler.compile( codes, opts )
-        return new Function( sourceCode )
+        return new Function( sourceCode )()
     }
 
     preCompile( src, opts ) {
@@ -72,6 +72,12 @@ class Template extends EventEmitter {
         filepath = Path.resolve( filepath )
 
         let config = this._config,
+            helper = {
+                [ Compiler.EXT_OBJECT ] : Ext,
+                [ Compiler.TE_OBJECT ]  : Template,
+                [ Compiler.PATH_OBJECT ]: Path,
+                [ Compiler.DIR_OBJECT ] : config.basePath || Path.dirname( filepath )
+            },
             fn
 
         if ( cache.has( filepath ) ) {
@@ -82,7 +88,7 @@ class Template extends EventEmitter {
                     encoding: 'utf8'
                 } )
 
-                fn = this.compile( codes, this._config )
+                fn = this.compile( codes, this._config )( helper )
                 cache.set( filepath, fn )
             } catch ( e ) {
                 /* eslint-disable */
@@ -93,12 +99,7 @@ class Template extends EventEmitter {
         }
 
         try {
-            typeof callback === 'function' && callback( fn.call( Object.assign( {}, data, {
-                [ Compiler.EXT_OBJECT ] : Ext,
-                [ Compiler.TE_OBJECT ]  : Template,
-                [ Compiler.PATH_OBJECT ]: Path,
-                [ Compiler.DIR_OBJECT ] : config.basePath || Path.dirname( filepath )
-            } ) ) )
+            typeof callback === 'function' && callback( fn( data ) )
         } catch ( e ) {
             this.emit( 'error', e )
         }
@@ -108,15 +109,16 @@ class Template extends EventEmitter {
 
     renderString( codes, data, callback ) {
         let config = this._config, /**/
-            fn     = this.compile( codes )
-
-        try {
-            typeof callback === 'function' && callback( fn.call( Object.assign( {}, data, {
+            helper = {
                 [ Compiler.EXT_OBJECT ] : Ext,
                 [ Compiler.TE_OBJECT ]  : Template,
                 [ Compiler.PATH_OBJECT ]: Path,
                 [ Compiler.DIR_OBJECT ] : config.basePath || __dirname
-            } ) ) )
+            },
+            fn     = this.compile( codes )( helper )
+
+        try {
+            typeof callback === 'function' && callback( fn( data ) )
         } catch ( e ) {
             this.emit( 'error', e )
         }

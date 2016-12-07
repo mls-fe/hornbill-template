@@ -136,25 +136,26 @@ class Compiler {
         let codeBlock  = this._codes.join( SPLITTER ),
             sourceCode = `
 'use strict'
-let ${ EXT_OBJECT } = this.${ EXT_OBJECT },
-    ${ TE_OBJECT } = this.${ TE_OBJECT },
-    ${ PATH_OBJECT } = this.${ PATH_OBJECT },
-    ${ DIR_OBJECT } = this.${ DIR_OBJECT },
-    coreFn = function() {
-        let ${ HTML_OBJECT } = ''
-        ${ codeBlock }
-        return ${ HTML_OBJECT }
-    },
-    resultFn = function() {
-        try {
-            return coreFn.call( this )
-        } catch( e ) {
-            console.error( e )
-            return null
-        } 
-    }
-return resultFn.call( this )
-`
+return ( helper ) => {
+    let ${ EXT_OBJECT }  = helper.${ EXT_OBJECT },
+        ${ TE_OBJECT }   = helper.${ TE_OBJECT },
+        ${ PATH_OBJECT } = helper.${ PATH_OBJECT },
+        ${ DIR_OBJECT }  = helper.${ DIR_OBJECT },
+        coreFn = function() {
+            let ${ HTML_OBJECT } = ''
+            ${ codeBlock }
+            return ${ HTML_OBJECT }
+        },
+        resultFn = ( data ) => {
+            try {
+                return coreFn.call( data )
+            } catch( e ) {
+                console.error( e )
+                return null
+            } 
+        }
+    return resultFn
+}`
         return sourceCode
     }
 }
