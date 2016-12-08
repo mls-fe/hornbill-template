@@ -122,7 +122,7 @@ class Template extends EventEmitter {
     wrap( sourceCode ) {
         let config = this._config
 
-        return new Function( 'helper', 'return ' + sourceCode + '()' )( {
+        return new Function( 'helper', 'return ' + sourceCode + '( helper )' )( {
             [ Compiler.EXT_OBJECT ] : Ext,
             [ Compiler.TE_OBJECT ]  : Template,
             [ Compiler.PATH_OBJECT ]: Path,

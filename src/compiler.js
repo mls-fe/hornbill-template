@@ -138,7 +138,7 @@ class Compiler {
 
     getCode() {
         let codeBlock  = this._codes.join( SPLITTER ),
-            sourceCode = `function() {
+            sourceCode = `function _hornbillGeneratedFn(helper) {
 'use strict'
 let ${ EXT_OBJECT }  = helper.${ EXT_OBJECT },
     ${ TE_OBJECT }   = helper.${ TE_OBJECT },
