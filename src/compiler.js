@@ -138,34 +138,38 @@ class Compiler {
 
     getCode() {
         let codeBlock  = this._codes.join( SPLITTER ),
-            sourceCode = `
+            sourceCode = `function() {
 'use strict'
-return ( helper ) => {
-    let ${ EXT_OBJECT }  = helper.${ EXT_OBJECT },
-        ${ TE_OBJECT }   = helper.${ TE_OBJECT },
-        ${ PATH_OBJECT } = helper.${ PATH_OBJECT },
-        ${ DIR_OBJECT }  = helper.${ DIR_OBJECT },
-        coreFn = function() {
-            let ${ HTML_OBJECT } = ''
-            ${ codeBlock }
-            return ${ HTML_OBJECT }
-        },
-        resultFn = ( data ) => {
-            try {
-                return coreFn.call( data )
-            } catch( e ) {
-                console.error( e )
-                return null
-            } 
-        }
-    return resultFn
-}`
+let ${ EXT_OBJECT }  = helper.${ EXT_OBJECT },
+    ${ TE_OBJECT }   = helper.${ TE_OBJECT },
+    ${ PATH_OBJECT } = helper.${ PATH_OBJECT },
+    ${ DIR_OBJECT }  = helper.${ DIR_OBJECT },
+    coreFn = function() {
+        let ${ HTML_OBJECT } = ''
+        ${ codeBlock }
+        return ${ HTML_OBJECT }
+    },
+    resultFn = ( data ) => {
+        try {
+            return coreFn.call( data )
+        } catch( e ) {
+            console.error( e )
+            return null
+        } 
+    }
+return resultFn
+}
+`
         return sourceCode
     }
 }
 
 module.exports = {
     compile( source, config ) {
+        if ( !source ) {
+            throw Error( 'Please provide source code!' )
+        }
+
         let compiler = new Compiler( source, config )
         return compiler
             .run()

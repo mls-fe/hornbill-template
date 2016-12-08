@@ -27,8 +27,7 @@ class Template extends EventEmitter {
     }
 
     compile( codes, opts ) {
-        let sourceCode = Compiler.compile( codes, opts )
-        return new Function( sourceCode )()
+        return this.wrap( Compiler.compile( codes, opts ) )
     }
 
     preCompile( src, opts ) {
@@ -75,14 +74,7 @@ class Template extends EventEmitter {
     render( filepath, data, callback ) {
         filepath = Path.resolve( filepath )
 
-        let config = this._config,
-            helper = {
-                [ Compiler.EXT_OBJECT ] : Ext,
-                [ Compiler.TE_OBJECT ]  : Template,
-                [ Compiler.PATH_OBJECT ]: Path,
-                [ Compiler.DIR_OBJECT ] : config.basePath || Path.dirname( filepath )
-            },
-            fn
+        let fn
 
         if ( cache.has( filepath ) ) {
             fn = cache.get( filepath )
@@ -92,7 +84,7 @@ class Template extends EventEmitter {
                     encoding: 'utf8'
                 } )
 
-                fn = this.compile( codes, this._config )( helper )
+                fn = this.compile( codes, this._config )
                 cache.set( filepath, fn )
             } catch ( e ) {
                 /* eslint-disable */
@@ -112,14 +104,7 @@ class Template extends EventEmitter {
     }
 
     renderString( codes, data, callback ) {
-        let config = this._config, /**/
-            helper = {
-                [ Compiler.EXT_OBJECT ] : Ext,
-                [ Compiler.TE_OBJECT ]  : Template,
-                [ Compiler.PATH_OBJECT ]: Path,
-                [ Compiler.DIR_OBJECT ] : config.basePath || __dirname
-            },
-            fn     = this.compile( codes )( helper )
+        let fn = this.compile( codes )
 
         try {
             typeof callback === 'function' && callback( fn( data ) )
@@ -132,6 +117,17 @@ class Template extends EventEmitter {
 
     generateName( str ) {
         return Crypto.createHash( 'md5' ).update( str ).digest( 'hex' )
+    }
+
+    wrap( sourceCode ) {
+        let config = this._config
+
+        return new Function( 'helper', 'return ' + sourceCode + '()' )( {
+            [ Compiler.EXT_OBJECT ] : Ext,
+            [ Compiler.TE_OBJECT ]  : Template,
+            [ Compiler.PATH_OBJECT ]: Path,
+            [ Compiler.DIR_OBJECT ] : config.basePath || __dirname
+        } )
     }
 }
 
